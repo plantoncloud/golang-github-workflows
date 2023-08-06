@@ -1,0 +1,81 @@
+name: build-and-deploy
+
+on:
+  workflow_call:
+    secrets:
+      PLANTON_CLOUD_CLIENT_ID:
+        required: true
+      PLANTON_CLOUD_CLIENT_SECRET:
+        required: true
+    inputs:
+      SETUP_GIT_SSH:
+        required: false
+        default: false
+        type: 'boolean'
+      PLANTON_CLOUD_ARTIFACT_STORE_ID:
+        required: true
+        type: string
+      DOCKER_REPO_HOSTNAME:
+        required: true
+        type: string
+      CONTAINER_IMAGE_REPO:
+        required: true
+        type: string
+      CONTAINER_IMAGE_TAG:
+        required: true
+        type: string
+      PLANTON_CLOUD_ENVIRONMENT_ID:
+        required: true
+        type: string
+      PLANTON_CLOUD_ENVIRONMENT_NAME:
+        required: true
+        type: string
+      PLANTON_CLOUD_MICROSERVICE_INSTANCE_VERSION:
+        required: true
+        type: string
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.PLANTON_CLOUD_ENVIRONMENT_ID }}-${{ inputs.PLANTON_CLOUD_MICROSERVICE_INSTANCE_VERSION }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      
+      - name: Install Planton CLI
+        uses: plantoncloud/install-planton-cli-action@main
+      
+      - name: Login to Planton Cloud
+        uses: plantoncloud/gha-planton-cli-login@main
+        with:
+          planton_cloud_client_id: ${{ secrets.PLANTON_CLOUD_CLIENT_ID }}
+          planton_cloud_client_secret: ${{ secrets.PLANTON_CLOUD_CLIENT_SECRET }}
+
+      - name: Setup Git SSH
+        if: ${{ inputs.SETUP_GIT_SSH == true }}
+        uses: plantoncloud/gha-setup-git-ssh-for-pc-artifact-store@main
+        with:
+          planton_cloud_artifact_store_id: ${{ inputs.PLANTON_CLOUD_ARTIFACT_STORE_ID }}
+
+      - name: Setup Golang
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20.0'
+
+      - name: Build with Make
+        run:  make build
+
+      - name: Build & Push Docker Image
+        uses: plantoncloud/gha-build-and-push-docker-image@main
+        with:
+          planton_cloud_artifact_store_id: ${{ inputs.PLANTON_CLOUD_ARTIFACT_STORE_ID }}
+          docker_repo_hostname: ${{ inputs.DOCKER_REPO_HOSTNAME }}
+          container_image_repo: ${{ inputs.CONTAINER_IMAGE_REPO }}
+          container_image_tag: ${{ inputs.CONTAINER_IMAGE_TAG }}
+
+      - name: Deploy Microservice
+        uses: plantoncloud/gha-deploy-microservice@main
+        with:
+          planton_cloud_environment_name: ${{ inputs.PLANTON_CLOUD_ENVIRONMENT_NAME }}
+          planton_cloud_microservice_instance_version: ${{ inputs.PLANTON_CLOUD_MICROSERVICE_INSTANCE_VERSION }}
+          container_image_tag: ${{ inputs.CONTAINER_IMAGE_TAG }}
