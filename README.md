@@ -1,10 +1,6 @@
-Understood. Here's a revised README considering that this repository will support multiple types of Golang project deployments:
+# GitHub Workflows for Golang Projects
 
----
-
-# Planton Cloud Golang CI/CD Workflows
-
-This repository provides workflow templates tailored for Golang projects aiming to integrate with various deployment targets using Planton Cloud services.
+This repository provides workflow templates tailored for Golang projects aiming to integrate with various deployment targets using Planton Cloud.
 
 ## Workflow Descriptions
 
